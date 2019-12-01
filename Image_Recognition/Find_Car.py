@@ -129,7 +129,8 @@ class ImageScanner:
             x_max = pixel[0] if pixel[0] > x_max else x_max
             y_max = pixel[1] if pixel[1] > y_max else y_max
 
-        box = [(x_min, y_min), (x_max - x_min + 1, y_max - y_min + 1)]
+        # w,h will never be changed, x, y will be changed in simulation
+        box = [[x_min, y_min], (x_max - x_min + 1, y_max - y_min + 1)]
 
         self.boxes.append(box)
 

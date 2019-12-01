@@ -36,23 +36,18 @@ class GridThresholding:
 
         return height, width
 
-    @staticmethod
-    def test_round_to(x, base):
-        return round(x/base)
-
     def get_pos(self, rectangle_shape):
         # returns middle of rectangle as a position in the threshold image
-        x = (rectangle_shape[0][0] + rectangle_shape[1][0] / 2) / self.cell_size
-        y = (rectangle_shape[0][1] + rectangle_shape[1][1] / 2) / self.cell_size
+        x = (rectangle_shape[0][0] + rectangle_shape[1][0] / 2) / round(self.cell_size)
+        y = (rectangle_shape[0][1] + rectangle_shape[1][1] / 2) / round(self.cell_size)
 
         x_round = round(x)
         y_round = round(y)
 
-        # if rounded up -> -1
-        if x_round > x:
-            x_round -= 1
-        if y_round > y:
-            y_round -= 1
+        dim = self.get_dimensions()
+
+        x_round -= 1
+        y_round -= 1
 
         # y, x used so it is placed correctly in the grid
         return [y_round, x_round]

@@ -10,24 +10,77 @@ import Simplification.Image_Greyscaling as img_greyscale
 
 import U_Generate_Image as generate_image
 
-import numpy
 import time
-import random
+from random import randint
+from os import remove, listdir
+
+
+def randomize(rest):
+    # randomize the rest value (simulate errors of the motors)
+    rest[0][0][0] += randint(-5, 5)
+    rest[0][0][1] += randint(-5, 5)
+    rest[1] += randint(-20, 20)
+    return rest
 
 
 def simulate(name):
-    # pos, rectangles (image coordinates), cell size
-    generate_image.run(None, run_on(name))
+    # delete images
+    file_list = listdir("Images/Animation/")
+    for file in file_list:
+        remove("Images/Animation/" + str(file))
+
+    number = 1
+
+    # pos, rotation, rectangles (image coordinates), cell size
+    o_values = run_on(name)
+
+    # make an error
+    rest = randomize(run_on(name))
+
+    # error for cell size movement and 90 degree turn
+    error = [o_values[0][0][0] - rest[0][0][0], o_values[0][0][1] - rest[0][0][1], o_values[1] - rest[1]]
+
+    print("X-Error:", error[0])
+    print("Y-Error:", error[1])
+    print("Rot-Error:", error[2])
+
+    generate_image.run(None, rest)
+
+    # to a certain number or error margin
+    while number < 4:
+        # analyse error image
+        values = run_on("Images/Animation/" + str(number) + ".png")
+        # correct the cars position
+        values[0][0][0] += min(error[0] / 2, o_values[3])
+        values[0][0][1] += min(error[1] / 2, o_values[3])
+
+        values[1] += min(error[2], 90)
+
+        if abs(error[2]) > 90:
+            raise ValueError
+
+        if abs(error[2]) < abs(o_values[1] - values[1]) - 10:
+            raise ValueError(abs(error[2]), abs(o_values[1] - values[1]))
+
+        # look new difference to the destination
+        error = [o_values[0][0][0] - values[0][0][0], o_values[0][0][1] - values[0][0][1], o_values[1] - values[1]]
+
+        print("X-Error:", error[0])
+        print("Y-Error:", error[1])
+        print("Rot-Error:", error[2])
+
+        # the overlapping car may destroy some rectangles, keep the original (o_values) cell size
+        values[2] = o_values[2]
+        values[3] = o_values[3]
+
+        generate_image.run(None, values)
+        number += 1
     pass
 
 
 def run_on(name):
     start_time = time.time()
     debugging = 1
-
-    # debugging = 0.5 will just be used when it is run as main
-    if __name__ != "__main__" and debugging == 0.5:
-        debugging = 0
 
     img = img_greyscale.prepare_image(name, 100, 1)
 
@@ -51,8 +104,11 @@ def run_on(name):
 
     print("Time after image recognition:", time.time() - start_time)
 
-    return (car_box, rot, rectangles, cell_size)
+    return [car_box, rot, rectangles, cell_size]
 
 
 if __name__ == "__main__":
-    simulate("Images/Artificial/2.png")
+    for x in range(1, 10):
+        simulate("Images/Artificial/2.png")
+
+    exit()

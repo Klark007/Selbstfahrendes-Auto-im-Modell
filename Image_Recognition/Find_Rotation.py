@@ -1,6 +1,6 @@
 import Image_Recognition.Find_Car as find_circle
 
-from math import atan, pi, pow, sqrt
+from math import atan2, pi, pow, sqrt
 
 
 class RotationScanner(find_circle.ImageScanner):
@@ -11,12 +11,32 @@ class RotationScanner(find_circle.ImageScanner):
         self.max_distance = self.distance_to((0, 0), (img.shape[1], img.shape[0]))
         pass
 
+    def test_neighbour(self, x, y):
+        return True  # 35 <= self.image[y][x] <= 100
+
     def test_pixel(self, x, y):
         # replaces < with <=
         in_range = self.color - self.color_range <= self.image[y][x] <= self.color + self.color_range
         not_used = (x, y) not in self.temp and (x, y) not in self.const
+        good_neighbour = False
+                
+        if not(y == 0):
+            if self.test_neighbour(x, y - 1):
+                good_neighbour = True
+        
+        if not(y == len(self.image) - 1):
+            if self.test_neighbour(x, y + 1):
+                good_neighbour = True
+        
+        if not(x == 0):
+            if self.test_neighbour(x - 1, y):
+                good_neighbour = True
+        
+        if not(x == len(self.image[y]) - 1):
+            if self.test_neighbour(x + 1, y):
+                good_neighbour = True
 
-        if in_range and not_used:
+        if in_range and not_used and good_neighbour:
             return True
         return False
     
@@ -25,7 +45,7 @@ class RotationScanner(find_circle.ImageScanner):
         delta = (_2[0]-_1[0], _2[1]-_1[1])
         return sqrt(pow(delta[0], 2) + pow(delta[1], 2))
     
-    def find_biggest_box(self, number_of_pixel=None):
+    def find_biggest_box(self, number_of_pixel):
         # number_of_pixel will not be used
 
         # newest rectangle
@@ -33,48 +53,27 @@ class RotationScanner(find_circle.ImageScanner):
         circle_pos = (round(rect[0][0] + rect[1][0] / 2), round(rect[0][1] + rect[1][1] / 2))
 
         distance = self.distance_to(self.center_pos, circle_pos)
-
-        if distance > self.max_distance:
+        print(distance, rect)
+        if distance < self.max_distance:
             self.max_distance = distance
             self.max_pixel_per_box_index = self.c
 
-    @staticmethod
-    def line_comparison(_1, _2):
-        # used to look at case 1 and 2
-        if _2-_1 > 0:
-            return 0
-        elif _2-_1 < 0:
-            return 180
-        raise ValueError("Mark on robot is in the center")
-    
     @property
     def rotation(self):
         # size of circle and relative position to the position of the car
         circle = self.run()
+
         circle_pos = [round(circle[0][0]+circle[1][0]/2), round(circle[0][1]+circle[1][1]/2)]
-
+        print(" Circle:", circle_pos)
         # inverts the y coordinate so the degrees are in the normal
-        circle_pos[1] = self.image.shape[1]-circle_pos[1]
+        circle_pos[1] = self.image.shape[0]-circle_pos[1]
 
-        print("Two positions", circle_pos, self.center_pos)
-
-        # cases x == x or y == y look at delta, else use atan
-        if circle_pos[0] == self.center_pos[0]:
-            degree = 90 + self.line_comparison(self.center_pos[1], circle_pos[1])
-        elif circle_pos[1] == self.center_pos[1]:
-            degree = self.line_comparison(self.center_pos[0], circle_pos[0])
-        else:
-            degree = atan((self.center_pos[1]-circle_pos[1])/(self.center_pos[0]-circle_pos[0])) * 180 / pi
-
-            # adjust the degree values of atan so 0 <= degree <= 360
-            if degree < 0:
-                if self.center_pos[1]-circle_pos[1] < 0:
-                    degree += 180
-                else:
-                    degree += 360
-            if degree > 0:
-                if self.center_pos[0]-circle_pos[0] > 0:
-                    degree += 180
+        degree = atan2(circle_pos[1]-self.center_pos[1], circle_pos[0]-self.center_pos[0]) * 180 / pi
+        print(degree)
+        # adjust the degree values of atan so 0 <= degree <= 360
+        print("Center: ", self.center_pos)
+        if degree < 0:
+            degree += 360
 
         # return the rotation between the line defined trough the two points and the x-axis
         return degree

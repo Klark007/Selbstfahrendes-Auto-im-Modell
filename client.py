@@ -1,3 +1,11 @@
+"""
+    Commands
+    fs: finished command
+    ct: send correction data
+    st: stop sending correction data
+"""
+
+
 import socket
 from ast import literal_eval
 import Yetiborg.Drive as Yetiborg
@@ -9,10 +17,13 @@ s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect(("localhost", 12345))  # 192.168.0.11 / localhost / 192.168.0.108
 
 # car always looks up at the beginning
-car = Yetiborg.Yetiborg((0, 1))
+car = Yetiborg.Yetiborg((0, -1), s)
 
 """
-    fs: finished
+    ct: continue correction
+    st: stop correction
+    
+    fs: finished command
 """
 
 
