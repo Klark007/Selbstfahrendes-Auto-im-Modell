@@ -1,7 +1,0 @@
-*.log
-
-*.pyc
-__pycache__
-
-Images
-*.png
